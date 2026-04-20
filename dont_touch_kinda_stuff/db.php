@@ -10,6 +10,7 @@ try {
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $conn->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
     $conn->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+    $conn->exec("SET NAMES utf8mb4");
 } catch(PDOException $e) {
     error_log("Database connection failed: " . $e->getMessage());
     die("A database error occurred. Please try again later.");

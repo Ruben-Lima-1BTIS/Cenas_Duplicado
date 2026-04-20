@@ -113,7 +113,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (empty($errors)) {
         // create uploads folder
         $destDir = __DIR__ . '/uploads/reports/' . $student_id;
-        if (!is_dir($destDir) && !@mkdir($destDir, 0755, true) && !is_dir($destDir)) {
+        if (!is_dir($destDir) && !mkdir($destDir, 0755, true) && !is_dir($destDir)) {
+            error_log('Submit report upload directory creation failed: ' . $destDir);
             $errors[] = 'Failed to prepare upload directory.';
         }
 
