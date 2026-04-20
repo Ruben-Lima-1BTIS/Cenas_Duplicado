@@ -100,12 +100,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'txt' => ['text/plain']
             ];
             $finfo = finfo_open(FILEINFO_MIME_TYPE);
-            $mimeType = $finfo ? finfo_file($finfo, $file['tmp_name']) : null;
-            if ($finfo) {
+            if (!$finfo) {
+                error_log('Submit report MIME check failed: finfo_open unavailable');
+                $errors[] = 'Unable to verify file type. Please try again later.';
+            } else {
+                $mimeType = finfo_file($finfo, $file['tmp_name']);
                 finfo_close($finfo);
-            }
-            if (!$mimeType || !in_array($mimeType, $mimeAllowlistByExt[$ext], true)) {
-                $errors[] = 'Invalid file content type.';
+                if (!$mimeType || !in_array($mimeType, $mimeAllowlistByExt[$ext], true)) {
+                    $errors[] = 'Invalid file content type.';
+                }
             }
         }
     }
