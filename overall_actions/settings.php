@@ -1,5 +1,6 @@
 <?php
 session_start();
+require_once __DIR__ . '/../dont_touch_kinda_stuff/CSRFToken.php';
 
 if (file_exists(__DIR__ . '/../dont_touch_kinda_stuff/db.php')) {
     require_once __DIR__ . '/../dont_touch_kinda_stuff/db.php';
@@ -46,31 +47,35 @@ $success = '';
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $current_password = $_POST['current_password'] ?? '';
-    $new_password = $_POST['new_password'] ?? '';
-    $confirm_password = $_POST['confirm_password'] ?? '';
-
-    if ($current_password && $new_password && $confirm_password) {
-        if ($new_password !== $confirm_password) {
-            $error = 'New passwords do not match';
-        } elseif (strlen($new_password) < 8) {
-            $error = 'Password must be at least 8 characters';
-        } else {
-            $stmt = $conn->prepare("SELECT password_hash FROM $table WHERE id = ?");
-            $stmt->execute([$user_id]);
-            $stored_hash = $stmt->fetchColumn();
-
-            if (password_verify($current_password, $stored_hash)) {
-                $new_hash = password_hash($new_password, PASSWORD_DEFAULT);
-                $update = $conn->prepare("UPDATE $table SET password_hash = ? WHERE id = ?");
-                $update->execute([$new_hash, $user_id]);
-                $success = 'Password updated successfully';
-            } else {
-                $error = 'Current password is incorrect';
-            }
-        }
+    if (!CSRFToken::validateAndRegenerate('settings_csrf')) {
+        $error = 'Invalid request. Please refresh and try again.';
     } else {
-        $error = 'All fields are required';
+        $current_password = $_POST['current_password'] ?? '';
+        $new_password = $_POST['new_password'] ?? '';
+        $confirm_password = $_POST['confirm_password'] ?? '';
+
+        if ($current_password && $new_password && $confirm_password) {
+            if ($new_password !== $confirm_password) {
+                $error = 'New passwords do not match';
+            } elseif (strlen($new_password) < 8) {
+                $error = 'Password must be at least 8 characters';
+            } else {
+                $stmt = $conn->prepare("SELECT password_hash FROM $table WHERE id = ?");
+                $stmt->execute([$user_id]);
+                $stored_hash = $stmt->fetchColumn();
+
+                if (password_verify($current_password, $stored_hash)) {
+                    $new_hash = password_hash($new_password, PASSWORD_DEFAULT);
+                    $update = $conn->prepare("UPDATE $table SET password_hash = ? WHERE id = ?");
+                    $update->execute([$new_hash, $user_id]);
+                    $success = 'Password updated successfully';
+                } else {
+                    $error = 'Current password is incorrect';
+                }
+            }
+        } else {
+            $error = 'All fields are required';
+        }
     }
 }
 
@@ -204,6 +209,7 @@ if ($user_role === 'supervisor') {
             <?php endif; ?>
 
             <form method="POST">
+                <?php echo CSRFToken::field('settings_csrf'); ?>
                 <div class="space-y-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
