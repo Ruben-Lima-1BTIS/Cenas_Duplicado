@@ -1,5 +1,6 @@
 <?php
 session_start();
+require_once __DIR__ . '/../dont_touch_kinda_stuff/CSRFToken.php';
 
 // Fix: Use correct path to db.php (now inside dont_touch_kinda_stuff)
 if (file_exists(__DIR__ . '/../dont_touch_kinda_stuff/db.php')) {
@@ -38,34 +39,38 @@ if ($firstLogin == 0) {
 $error = "";
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
-    $newPassword = $_POST["new_password"] ?? "";
-    $confirmPassword = $_POST["confirm_password"] ?? "";
-
-    if (empty($newPassword) || empty($confirmPassword)) {
-        $error = "Please fill in both password fields.";
-    } elseif ($newPassword !== $confirmPassword) {
-        $error = "Passwords do not match.";
-    } elseif (strlen($newPassword) < 8) { // changed from 6 to 8 to match client rules
-        $error = "Password must be at least 8 characters.";
+    if (!CSRFToken::validateAndRegenerate('change_password_csrf')) {
+        $error = "Invalid request. Please try again.";
     } else {
-        // se tudo tiver válido, vai redirecionar e atualizar a password do user
-        $passwordHash = password_hash($newPassword, PASSWORD_DEFAULT);
+        $newPassword = $_POST["new_password"] ?? "";
+        $confirmPassword = $_POST["confirm_password"] ?? "";
 
-        $query = $conn->prepare("UPDATE $table SET password_hash = ?, first_login = 0 WHERE id = ?");
-        $query->execute([$passwordHash, $userId]);
+        if (empty($newPassword) || empty($confirmPassword)) {
+            $error = "Please fill in both password fields.";
+        } elseif ($newPassword !== $confirmPassword) {
+            $error = "Passwords do not match.";
+        } elseif (strlen($newPassword) < 8) { // changed from 6 to 8 to match client rules
+            $error = "Password must be at least 8 characters.";
+        } else {
+            // se tudo tiver válido, vai redirecionar e atualizar a password do user
+            $passwordHash = password_hash($newPassword, PASSWORD_DEFAULT);
 
-        // atualiza o campo first_login do user
-        $_SESSION['first_login'] = 0;
+            $query = $conn->prepare("UPDATE $table SET password_hash = ?, first_login = 0 WHERE id = ?");
+            $query->execute([$passwordHash, $userId]);
 
-        // rediciona para o dashboard correto
-        if ($role === 'student') {
-            header("Location: ../student_actions/dashboard.php?changed=1");
-        } elseif ($role === 'coordinator') {
-            header("Location: ../coordinator_actions/dashboard_coordinator.php?changed=1");
-        } elseif ($role === 'supervisor') {
-            header("Location: ../supervisor_actions/dashboard_supervisor.php?changed=1");
+            // atualiza o campo first_login do user
+            $_SESSION['first_login'] = 0;
+
+            // rediciona para o dashboard correto
+            if ($role === 'student') {
+                header("Location: ../student_actions/dashboard.php?changed=1");
+            } elseif ($role === 'coordinator') {
+                header("Location: ../coordinator_actions/dashboard_coordinator.php?changed=1");
+            } elseif ($role === 'supervisor') {
+                header("Location: ../supervisor_actions/dashboard_supervisor.php?changed=1");
+            }
+            exit;
         }
-        exit;
     }
 }
 ?>
@@ -106,6 +111,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                     </div>
                 <?php endif; ?>
                 <form method="POST">
+                    <?php echo CSRFToken::field('change_password_csrf'); ?>
                     <label class="block text-sm font-medium text-gray-700 mb-1">New Password</label>
                     <div class="flex w-full  border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" style="position: relative;">
                         <input 

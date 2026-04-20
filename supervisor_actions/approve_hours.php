@@ -1,5 +1,6 @@
 <?php
 session_start();
+require_once __DIR__ . '/../dont_touch_kinda_stuff/CSRFToken.php';
 
 if (file_exists(__DIR__ . '/../dont_touch_kinda_stuff/db.php')) {
     require_once __DIR__ . '/../dont_touch_kinda_stuff/db.php';
@@ -26,6 +27,10 @@ $company_name = $supervisor['company'] ?? '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     header('Content-Type: application/json');
+    if (!CSRFToken::validate('approve_hours_csrf')) {
+        echo json_encode(['success' => false, 'error' => 'Invalid request token']);
+        exit;
+    }
 
     $hour_id = isset($_POST['hour_id']) ? intval($_POST['hour_id']) : 0;
     $action = $_POST['action'];
@@ -316,11 +321,13 @@ if ($internship_ids) {
 
 <script>
 let currentHourId = null;
+const csrfToken = <?php echo json_encode(CSRFToken::generate('approve_hours_csrf')); ?>;
 
 function approveHour(hourId) {
     const formData = new FormData();
     formData.append('hour_id', hourId);
     formData.append('action', 'approve');
+    formData.append('csrf_token', csrfToken);
 
     fetch('', {
         method: 'POST',
@@ -359,6 +366,7 @@ function submitReject() {
     formData.append('hour_id', currentHourId);
     formData.append('action', 'reject');
     formData.append('comment', comment);
+    formData.append('csrf_token', csrfToken);
 
     fetch('', {
         method: 'POST',

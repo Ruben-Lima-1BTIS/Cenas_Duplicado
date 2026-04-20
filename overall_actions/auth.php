@@ -1,5 +1,6 @@
 <?php
 session_start();
+require_once __DIR__ . '/../dont_touch_kinda_stuff/CSRFToken.php';
 
 // Fix: Use correct path to db.php (now inside dont_touch_kinda_stuff)
 if (file_exists(__DIR__ . '/../dont_touch_kinda_stuff/db.php')) {
@@ -14,50 +15,54 @@ if (file_exists(__DIR__ . '/../dont_touch_kinda_stuff/db.php')) {
 
 // pegar os dados fornecidos no form
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $email = trim($_POST['email']);
-    $password = trim($_POST['password']);
+    if (!CSRFToken::validateAndRegenerate('auth_csrf')) {
+        $error = "Invalid request. Please try again.";
+    } else {
+        $email = trim($_POST['email'] ?? '');
+        $password = trim($_POST['password'] ?? '');
 
-    $roles = [
-        'student' => 'students',
-        'supervisor' => 'supervisors',
-        'coordinator' => 'coordinators'
-    ];
+        $roles = [
+            'student' => 'students',
+            'supervisor' => 'supervisors',
+            'coordinator' => 'coordinators'
+        ];
 
-    // procurar o user com o email e password fornecidos
-    $user_found = false;
-    foreach ($roles as $role => $table) {
-        $stmt = $conn->prepare("SELECT id, email, password_hash, first_login FROM $table WHERE email = ?");
-        $stmt->execute([$email]);
-        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+        // procurar o user com o email e password fornecidos
+        $user_found = false;
+        foreach ($roles as $role => $table) {
+            $stmt = $conn->prepare("SELECT id, email, password_hash, first_login FROM $table WHERE email = ?");
+            $stmt->execute([$email]);
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        if ($user && password_verify($password, $user['password_hash'])) {
-    $user_found = true;
+            if ($user && password_verify($password, $user['password_hash'])) {
+                $user_found = true;
 
-    // regenerate session ID to prevent session fixation attacks
-    session_regenerate_id(true);
+                // regenerate session ID to prevent session fixation attacks
+                session_regenerate_id(true);
 
-    // guardar as informacoes do user na sessao
-    $_SESSION['user_id'] = $user['id'];
-    $_SESSION['role'] = $role;
-    $_SESSION['email'] = $user['email'];
-    $_SESSION['first_login'] = $user['first_login'];
-    $_SESSION['table'] = $table;
+                // guardar as informacoes do user na sessao
+                $_SESSION['user_id'] = $user['id'];
+                $_SESSION['role'] = $role;
+                $_SESSION['email'] = $user['email'];
+                $_SESSION['first_login'] = $user['first_login'];
+                $_SESSION['table'] = $table;
 
-    // se for o primeiro login do utilizador, redirecionamos para mudar a password dada pelo HR
-    if ($user['first_login'] == 1) {
-        header("Location: change_password.php");
-        exit;
-    }
+                // se for o primeiro login do utilizador, redirecionamos para mudar a password dada pelo HR
+                if ($user['first_login'] == 1) {
+                    header("Location: change_password.php");
+                    exit;
+                }
 
-    // depois lemos o role guardado na sessao e redirecionamos para o dashboard correto
-    if ($role === 'student') header("Location: ../student_actions/dashboard.php");
-    elseif ($role === 'supervisor') header("Location: ../supervisor_actions/dashboard_supervisor.php");
-    elseif ($role === 'coordinator') header("Location: ../coordinator_actions/dashboard_coordinator.php");
-    exit;
-}
-    }
-    if (!$user_found) {
-        $error = "Invalid email or password.";
+                // depois lemos o role guardado na sessao e redirecionamos para o dashboard correto
+                if ($role === 'student') header("Location: ../student_actions/dashboard.php");
+                elseif ($role === 'supervisor') header("Location: ../supervisor_actions/dashboard_supervisor.php");
+                elseif ($role === 'coordinator') header("Location: ../coordinator_actions/dashboard_coordinator.php");
+                exit;
+            }
+        }
+        if (!$user_found) {
+            $error = "Invalid email or password.";
+        }
     }
 }
 ?>
@@ -113,6 +118,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </div>
                     <?php endif; ?>
                     <form method="POST">
+                        <?php echo CSRFToken::field('auth_csrf'); ?>
                         <div class="mb-4">
                             <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
                             <input 

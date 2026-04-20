@@ -1,5 +1,6 @@
 <?php
 session_start();
+require_once __DIR__ . '/../dont_touch_kinda_stuff/CSRFToken.php';
 
 // Fix: Use correct path to db.php (now inside dont_touch_kinda_stuff)
 if (file_exists(__DIR__ . '/../dont_touch_kinda_stuff/db.php')) {
@@ -48,6 +49,10 @@ $internship_id = $internship['internship_id'];
 // ---------------------------
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     header('Content-Type: application/json');
+    if (!CSRFToken::validate('log_hours_csrf')) {
+        echo json_encode(["success" => false, "error" => "Invalid request token"]);
+        exit;
+    }
 
     $date = $_POST['date'] ?? null;
     $start_time = $_POST['start_time'] ?? null;
@@ -72,7 +77,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->execute([$student_id, $internship_id, $date, $start_time, $end_time]);
             echo json_encode(["success" => true]);
         } catch (PDOException $e) {
-            echo json_encode(["success" => false, "error" => $e->getMessage()]);
+            error_log("Log hours error: " . $e->getMessage());
+            echo json_encode(["success" => false, "error" => "Database error"]);
         }
         exit;
     }
@@ -176,6 +182,7 @@ function relUrl($path) {
             <div class="bg-white p-6 rounded-xl shadow-md border max-w-2xl">
                 <h3 class="text-xl font-semibold mb-4 text-gray-800">Add New Hours</h3>
                 <form id="hoursForm" method="POST">
+                    <?php echo CSRFToken::field('log_hours_csrf'); ?>
                     <div class="space-y-4">
                         <div>
                             <label class="block text-sm font-medium mb-1">Date</label>

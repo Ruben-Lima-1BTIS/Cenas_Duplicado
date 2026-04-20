@@ -1,5 +1,6 @@
 <?php
 session_start();
+require_once __DIR__ . '/../dont_touch_kinda_stuff/CSRFToken.php';
 
 // Fix: Use correct path to db.php (now inside dont_touch_kinda_stuff)
 if (file_exists(__DIR__ . '/../dont_touch_kinda_stuff/db.php')) {
@@ -72,27 +73,53 @@ if ($internship) {
 $errors = [];
 $success = null;
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!CSRFToken::validateAndRegenerate('submit_reports_csrf')) {
+        $errors[] = 'Invalid request. Please try again.';
+    }
+
     $selectedWeek = isset($_POST['week']) ? (int)$_POST['week'] : 0;
-    if (!$selectedWeek || !array_key_exists($selectedWeek, $weeks)) {
+    if (empty($errors) && (!$selectedWeek || !array_key_exists($selectedWeek, $weeks))) {
         $errors[] = 'Please select a valid week.';
     }
 
-    if (!isset($_FILES['reportFile']) || $_FILES['reportFile']['error'] !== UPLOAD_ERR_OK) {
+    if (empty($errors) && (!isset($_FILES['reportFile']) || $_FILES['reportFile']['error'] !== UPLOAD_ERR_OK)) {
         $errors[] = 'Please upload a valid file.';
-    } else {
+    } elseif (empty($errors)) {
         $file = $_FILES['reportFile'];
         $maxBytes = 10 * 1024 * 1024; // 10MB
         if ($file['size'] > $maxBytes) $errors[] = 'File exceeds 10MB limit.';
-        // basic extension check
+        // extension + MIME check
         $allowed = ['pdf','doc','docx','txt'];
         $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
         if (!in_array($ext, $allowed)) $errors[] = 'Invalid file type.';
+        if (empty($errors)) {
+            $mimeAllowlistByExt = [
+                'pdf' => ['application/pdf'],
+                'doc' => ['application/msword', 'application/octet-stream'],
+                'docx' => ['application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/zip', 'application/octet-stream'],
+                'txt' => ['text/plain']
+            ];
+            $finfo = finfo_open(FILEINFO_MIME_TYPE);
+            if (!$finfo) {
+                error_log('Submit report MIME check failed: finfo_open unavailable');
+                $errors[] = 'Unable to verify file type. Please try again later.';
+            } else {
+                $mimeType = finfo_file($finfo, $file['tmp_name']);
+                finfo_close($finfo);
+                if (!$mimeType || !in_array($mimeType, $mimeAllowlistByExt[$ext], true)) {
+                    $errors[] = 'Invalid file content type.';
+                }
+            }
+        }
     }
 
     if (empty($errors)) {
         // create uploads folder
         $destDir = __DIR__ . '/uploads/reports/' . $student_id;
-        if (!is_dir($destDir)) mkdir($destDir, 0755, true);
+        if (!is_dir($destDir) && !mkdir($destDir, 0750, true) && !is_dir($destDir)) {
+            error_log('Submit report upload directory creation failed: ' . $destDir);
+            $errors[] = 'Failed to prepare upload directory.';
+        }
 
         // unique filename
         $basename = pathinfo($file['name'], PATHINFO_FILENAME);
@@ -100,9 +127,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $uniqueName = $safeBase . '_' . time() . '.' . $ext;
         $destPath = $destDir . '/' . $uniqueName;
 
-        if (!move_uploaded_file($file['tmp_name'], $destPath)) {
+        if (empty($errors) && (!is_uploaded_file($file['tmp_name']) || !move_uploaded_file($file['tmp_name'], $destPath))) {
             $errors[] = 'Failed to move uploaded file.';
-        } else {
+        } elseif (empty($errors)) {
             // insert into existing reports table using its actual columns:
             // id, student_id, internship_id, title, content, submitted_at, status, supervisor_reviewed_by, supervisor_comment
             try {
@@ -120,8 +147,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 $success = 'Report submitted successfully.';
             } catch (Exception $e) {
-                $errors[] = 'Database error while saving report record: ' . $e->getMessage();
-                $success = 'File uploaded successfully (but DB save failed).';
+                error_log('Submit report DB error: ' . $e->getMessage());
+                $errors[] = 'Database error while saving report record.';
             }
         }
     }
@@ -238,6 +265,7 @@ function relUrl($path) {
     <?php endif; ?>
 
     <form id="reportForm" method="POST" enctype="multipart/form-data">
+        <?php echo CSRFToken::field('submit_reports_csrf'); ?>
         <div class="space-y-4">
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Week</label>

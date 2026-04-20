@@ -3,16 +3,20 @@ session_start();
 
 
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/CSRFToken.php';
 
 $success = "";
 $error = "";
 
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $type = $_POST['type'];
+    if (!CSRFToken::validateAndRegenerate('user_creation_csrf')) {
+        $error = "Invalid request. Please refresh and try again.";
+    } else {
+        $type = $_POST['type'];
 
-    try {
-        if ($type === 'class') {
+        try {
+            if ($type === 'class') {
             $course = trim($_POST['course'] ?? '');
             $sigla = trim($_POST['sigla'] ?? '');
             $year = isset($_POST['year']) && $_POST['year'] !== '' ? (int)$_POST['year'] : null;
@@ -173,12 +177,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
 
-        else {
-            $error = "Unknown entity type.";
-        }
+            else {
+                $error = "Unknown entity type.";
+            }
 
-    } catch (PDOException $e) {
-        $error = "Error: " . $e->getMessage();
+        } catch (PDOException $e) {
+            error_log("User creation error: " . $e->getMessage());
+            $error = "An unexpected database error occurred.";
+        }
     }
 }
 
@@ -209,6 +215,7 @@ $students = $conn->query("SELECT id, name FROM students")->fetchAll(PDO::FETCH_A
     <?php endif; ?>
 
     <form method="POST" class="bg-white p-4 rounded mb-4 shadow">
+        <?= CSRFToken::field('user_creation_csrf') ?>
         <h2 class="font-semibold mb-2">Create Class</h2>
         <input type="hidden" name="type" value="class">
         <input type="text" name="course" placeholder="Course Name" class="border p-2 rounded w-full mb-2" required>
@@ -226,6 +233,7 @@ $students = $conn->query("SELECT id, name FROM students")->fetchAll(PDO::FETCH_A
     </form>
 
     <form method="POST" class="bg-white p-4 rounded mb-4 shadow">
+        <?= CSRFToken::field('user_creation_csrf') ?>
         <h2 class="font-semibold mb-2">Create Company</h2>
         <input type="hidden" name="type" value="company">
         <input type="text" name="name" placeholder="Company Name" class="border p-2 rounded w-full mb-2" required>
@@ -236,6 +244,7 @@ $students = $conn->query("SELECT id, name FROM students")->fetchAll(PDO::FETCH_A
     </form>
 
     <form method="POST" class="bg-white p-4 rounded mb-4 shadow">
+        <?= CSRFToken::field('user_creation_csrf') ?>
         <h2 class="font-semibold mb-2">Create Coordinator</h2>
         <input type="hidden" name="type" value="coordinator">
         <input type="text" name="name" placeholder="Full Name" class="border p-2 rounded w-full mb-2" required>
@@ -254,6 +263,7 @@ $students = $conn->query("SELECT id, name FROM students")->fetchAll(PDO::FETCH_A
     </form>
 
     <form method="POST" class="bg-white p-4 rounded mb-4 shadow">
+        <?= CSRFToken::field('user_creation_csrf') ?>
         <h2 class="font-semibold mb-2">Create Internship</h2>
         <input type="hidden" name="type" value="internship">
     <input type="text" name="title" placeholder="Internship Title" class="border p-2 rounded w-full mb-2" required>
@@ -272,6 +282,7 @@ $students = $conn->query("SELECT id, name FROM students")->fetchAll(PDO::FETCH_A
     </form>
 
     <form method="POST" class="bg-white p-4 rounded mb-4 shadow">
+        <?= CSRFToken::field('user_creation_csrf') ?>
         <h2 class="font-semibold mb-2">Create Student</h2>
         <input type="hidden" name="type" value="student">
         <input type="text" name="name" placeholder="Full Name" class="border p-2 rounded w-full mb-2" required>
@@ -297,6 +308,7 @@ $students = $conn->query("SELECT id, name FROM students")->fetchAll(PDO::FETCH_A
     </form>
 
     <form method="POST" class="bg-white p-4 rounded mb-4 shadow">
+        <?= CSRFToken::field('user_creation_csrf') ?>
         <h2 class="font-semibold mb-2">Create Supervisor</h2>
         <input type="hidden" name="type" value="supervisor">
         <input type="text" name="name" placeholder="Full Name" class="border p-2 rounded w-full mb-2" required>
@@ -314,6 +326,7 @@ $students = $conn->query("SELECT id, name FROM students")->fetchAll(PDO::FETCH_A
     </form>
 
     <form method="POST" class="bg-white p-4 rounded mb-4 shadow">
+        <?= CSRFToken::field('user_creation_csrf') ?>
         <h2 class="font-semibold mb-2">Assign Supervisor to Internship</h2>
         <input type="hidden" name="type" value="assign_supervisor_internship">
 
@@ -335,6 +348,7 @@ $students = $conn->query("SELECT id, name FROM students")->fetchAll(PDO::FETCH_A
     </form>
 
     <form method="POST" class="bg-white p-4 rounded mb-4 shadow">
+        <?= CSRFToken::field('user_creation_csrf') ?>
         <h2 class="font-semibold mb-2">Assign Student to Internship</h2>
         <input type="hidden" name="type" value="assign_student_internship">
 

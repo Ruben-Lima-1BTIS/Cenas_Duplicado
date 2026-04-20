@@ -1,5 +1,6 @@
 <?php
 session_start();
+require_once __DIR__ . '/../dont_touch_kinda_stuff/CSRFToken.php';
 
 if (file_exists(__DIR__ . '/../dont_touch_kinda_stuff/db.php')) {
     require_once __DIR__ . '/../dont_touch_kinda_stuff/db.php';
@@ -26,6 +27,10 @@ $company_name = $supervisor['company'] ?? '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     header('Content-Type: application/json');
+    if (!CSRFToken::validate('review_reports_supervisor_csrf')) {
+        echo json_encode(['success' => false, 'error' => 'Invalid request token']);
+        exit;
+    }
 
     $report_id = isset($_POST['report_id']) ? intval($_POST['report_id']) : 0;
     $action = $_POST['action'];
@@ -246,6 +251,7 @@ if ($internship_ids) {
 
 <script>
 let currentReportId = null;
+const csrfToken = <?php echo json_encode(CSRFToken::generate('review_reports_supervisor_csrf')); ?>;
 
 function approveReport(reportId) {
     if (!confirm('Are you sure you want to approve this report?')) return;
@@ -253,6 +259,7 @@ function approveReport(reportId) {
     const formData = new FormData();
     formData.append('report_id', reportId);
     formData.append('action', 'approve');
+    formData.append('csrf_token', csrfToken);
 
     fetch('', {
         method: 'POST',
@@ -291,6 +298,7 @@ function submitReject() {
     formData.append('report_id', currentReportId);
     formData.append('action', 'reject');
     formData.append('feedback', feedback);
+    formData.append('csrf_token', csrfToken);
 
     fetch('', {
         method: 'POST',
