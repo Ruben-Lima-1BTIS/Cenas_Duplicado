@@ -113,10 +113,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (empty($errors)) {
         // create uploads folder
         $destDir = __DIR__ . '/uploads/reports/' . $student_id;
-        if (!is_dir($destDir)) {
-            if (!mkdir($destDir, 0755, true) && !is_dir($destDir)) {
-                $errors[] = 'Failed to prepare upload directory.';
-            }
+        if (!is_dir($destDir) && !@mkdir($destDir, 0755, true) && !is_dir($destDir)) {
+            $errors[] = 'Failed to prepare upload directory.';
         }
 
         // unique filename
