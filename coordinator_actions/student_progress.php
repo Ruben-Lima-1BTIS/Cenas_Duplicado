@@ -335,28 +335,5 @@ foreach ($students as $student) {
             }
         }
     </script>
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: true,
-                            plugins: { legend: { display: false } },
-                            scales: {
-                                y: {
-                                    beginAtZero: true,
-                                    ticks: {
-                                        callback: function(value) {
-                                            return value + ' hrs';
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    });
-                }
-            } else {
-                detail.classList.add('hidden');
-                icon.className = 'fas fa-chevron-right text-gray-500';
-            }
-        }
-    </script>
 </body>
 </html>
