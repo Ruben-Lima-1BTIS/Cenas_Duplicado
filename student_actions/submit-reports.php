@@ -14,8 +14,8 @@ if (file_exists(__DIR__ . '/../dont_touch_kinda_stuff/db.php')) {
 
 // require logged in student
 $student_id = $_SESSION['user_id'] ?? null;
-if (!$student_id) {
-    header('Location: auth.php');
+if (!$student_id || ($_SESSION['role'] ?? '') !== 'student') {
+    header('Location: ../overall_actions/auth.php');
     exit;
 }
 
@@ -207,7 +207,7 @@ function relUrl($path) {
         <main class="flex-1 flex flex-col overflow-hidden">
             <header class="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
                 <div class="flex items-center justify-between">
-               </a>     <div>
+                    <div>
                         <h2 class="text-2xl font-semibold text-gray-800">Submit Weekly Report</h2>
                         <p class="text-gray-600">Reflect on your progress and share updates</p>
                     </div>
@@ -216,7 +216,7 @@ function relUrl($path) {
                             <i class="fas fa-user text-gray-500"></i>
                         </div>
                         <div>
-                            <p class="font-medium text-gray-800">Ruben Lima</p>
+                            <p class="font-medium text-gray-800"><?= htmlspecialchars($_SESSION['email'] ?? 'Intern') ?></p>
                             <p class="text-sm text-gray-500">Intern</p>
                         </div>
                     </div>

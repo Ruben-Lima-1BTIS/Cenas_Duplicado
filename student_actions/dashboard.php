@@ -12,6 +12,11 @@ if (file_exists(__DIR__ . '/../dont_touch_kinda_stuff/db.php')) {
     die('Database connection file not found.');
 }
 
+if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'student') {
+    header("Location: ../overall_actions/auth.php");
+    exit;
+}
+
 $student_id = $_SESSION['user_id'];
 
 // ---- TOTAL HOURS REQUIRED FROM INTERNSHIP ----

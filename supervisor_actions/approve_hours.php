@@ -35,11 +35,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $comment = isset($_POST['comment']) ? trim($_POST['comment']) : null;
 
         try {
+            // Ownership check: verify the hour belongs to one of this supervisor's internships
+            $ownership = $conn->prepare("
+                SELECT COUNT(*) FROM hours h
+                JOIN supervisor_internships si ON si.internship_id = h.internship_id
+                WHERE h.id = ? AND si.supervisor_id = ?
+            ");
+            $ownership->execute([$hour_id, $supervisor_id]);
+            if ((int)$ownership->fetchColumn() === 0) {
+                echo json_encode(['success' => false, 'error' => 'Access denied']);
+                exit;
+            }
+
             $stmt = $conn->prepare("UPDATE hours SET status = ?, supervisor_reviewed_by = ?, supervisor_comment = ?, reviewed_at = NOW() WHERE id = ?");
             $stmt->execute([$status, $supervisor_id, $comment, $hour_id]);
             echo json_encode(['success' => true]);
         } catch (PDOException $e) {
-            echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+            error_log("Approve hours error: " . $e->getMessage());
+            echo json_encode(['success' => false, 'error' => 'Database error']);
         }
     } else {
         echo json_encode(['success' => false, 'error' => 'Invalid data']);

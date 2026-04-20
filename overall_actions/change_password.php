@@ -26,11 +26,11 @@ $firstLogin = $_SESSION['first_login'] ?? 0;
 // se já mudou a password, redireciona para o dashboard correto
 if ($firstLogin == 0) {
     if ($role === 'student') {
-        header("Location: dashboard.php"); // fixed typo
+        header("Location: ../student_actions/dashboard.php");
     } elseif ($role === 'coordinator') {
-        header("Location: dashboard_coordinator.php");
+        header("Location: ../coordinator_actions/dashboard_coordinator.php");
     } elseif ($role === 'supervisor') {
-        header("Location: dashboard_supervisor.php");
+        header("Location: ../supervisor_actions/dashboard_supervisor.php");
     }
     exit;
 }

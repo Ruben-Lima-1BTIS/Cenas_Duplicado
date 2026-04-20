@@ -47,11 +47,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $feedback = isset($_POST['feedback']) ? trim($_POST['feedback']) : null;
 
         try {
+            // Ownership check: verify the report's student is in one of this coordinator's classes
+            $ownership = $conn->prepare("
+                SELECT COUNT(*) FROM reports r
+                JOIN students s ON s.id = r.student_id
+                JOIN classes cls ON cls.id = s.class_id
+                WHERE r.id = ? AND cls.coordinator_id = ?
+            ");
+            $ownership->execute([$report_id, $coordinator_id]);
+            if ((int)$ownership->fetchColumn() === 0) {
+                echo json_encode(['success' => false, 'error' => 'Access denied']);
+                exit;
+            }
+
             $stmt = $conn->prepare("UPDATE reports SET status = ?, feedback = ? WHERE id = ?");
             $stmt->execute([$status, $feedback, $report_id]);
             echo json_encode(['success' => true]);
         } catch (PDOException $e) {
-            echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+            error_log("Review reports error: " . $e->getMessage());
+            echo json_encode(['success' => false, 'error' => 'Database error']);
         }
     } else {
         echo json_encode(['success' => false, 'error' => 'Invalid data']);

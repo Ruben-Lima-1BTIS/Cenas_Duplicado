@@ -132,15 +132,15 @@ tailwind.config = {
             <a href="student_progress.php" class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-blue-600">
                 <i class="fas fa-chart-line"></i><span class="font-medium">Student Progress</span>
             </a>
-            <a href="messages.php" class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-blue-600">
+            <a href="../overall_actions/messages.php" class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-blue-600">
                 <i class="fas fa-comments"></i><span class="font-medium">Messages</span>
             </a>
         </div>
         <div class="space-y-2 mt-auto">
-            <a href="settings.php" class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-blue-600">
+            <a href="../overall_actions/settings.php" class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-blue-600">
                 <i class="fas fa-cog"></i><span class="font-medium">Settings</span>
             </a>
-            <a href="logout.php" class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-blue-600">
+            <a href="../overall_actions/logout.php" class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-blue-600">
                 <i class="fas fa-sign-out-alt"></i><span class="font-medium">Logout</span>
             </a>
         </div>
@@ -221,17 +221,17 @@ tailwind.config = {
                 $onTrack = $s['logged_hours'] >= ($s['total_hours_required']*0.7);
             ?>
                 <tr class="<?= !$onTrack ? 'bg-red-50' : '' ?>">
-                    <td class="px-4 py-3 text-sm font-medium text-gray-800"><?= $s['student_name'] ?></td>
-                    <td class="px-4 py-3 text-sm text-gray-600"><?= $s['company_name'] ?></td>
-                    <td class="px-4 py-3 text-sm text-gray-800"><?= $s['logged_hours'] ?> / <?= $s['total_hours_required'] ?></td>
-                    <td class="px-4 py-3 text-sm text-gray-600"><?= $s['reports_submitted'] ?>/<?= $s['reports_required'] ?></td>
+                    <td class="px-4 py-3 text-sm font-medium text-gray-800"><?= htmlspecialchars($s['student_name']) ?></td>
+                    <td class="px-4 py-3 text-sm text-gray-600"><?= htmlspecialchars($s['company_name'] ?? '') ?></td>
+                    <td class="px-4 py-3 text-sm text-gray-800"><?= (int)$s['logged_hours'] ?> / <?= (int)$s['total_hours_required'] ?></td>
+                    <td class="px-4 py-3 text-sm text-gray-600"><?= (int)$s['reports_submitted'] ?>/<?= (int)$s['reports_required'] ?></td>
                     <td class="px-4 py-3">
                         <span class="px-2 py-1 text-xs rounded-full <?= $onTrack?'bg-green-100 text-green-800':'bg-red-100 text-red-800' ?>">
                             <?= $onTrack?'On Track':'At Risk' ?>
                         </span>
                     </td>
                     <td class="px-4 py-3">
-                        <a href="message_student.php?id=<?= $s['id'] ?>" class="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center">
+                        <a href="../overall_actions/messages.php?user_id=<?= (int)$s['id'] ?>" class="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center">
                             <i class="fas fa-comment mr-1"></i> Message
                         </a>
                     </td>
