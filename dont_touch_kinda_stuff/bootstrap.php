@@ -25,6 +25,11 @@ function internhub_start_session() {
     $isProduction = strtolower((string) getenv('APP_ENV')) === 'production';
     $secureCookies = $isHttps || $isProduction;
 
+    if ($isProduction && !$isHttps) {
+        http_response_code(403);
+        exit('HTTPS is required in production.');
+    }
+
     ini_set('session.use_strict_mode', '1');
     ini_set('session.use_only_cookies', '1');
 
