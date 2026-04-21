@@ -1,17 +1,6 @@
 <?php
-session_start();
-require_once __DIR__ . '/../dont_touch_kinda_stuff/CSRFToken.php';
-
-// Fix: Use correct path to db.php (now inside dont_touch_kinda_stuff)
-if (file_exists(__DIR__ . '/../dont_touch_kinda_stuff/db.php')) {
-    require_once __DIR__ . '/../dont_touch_kinda_stuff/db.php';
-} elseif (file_exists(__DIR__ . '/../db.php')) {
-    require_once __DIR__ . '/../db.php';
-} elseif (file_exists(__DIR__ . '/db.php')) {
-    require_once __DIR__ . '/db.php';
-} else {
-    die('Database connection file not found.');
-}
+require_once __DIR__ . '/../dont_touch_kinda_stuff/bootstrap.php';
+internhub_bootstrap(['db' => true, 'csrf' => true]);
 
 // se nao tiver logado expulsa
 if (!isset($_SESSION['user_id']) || !isset($_SESSION['table']) || !isset($_SESSION['role'])) {
