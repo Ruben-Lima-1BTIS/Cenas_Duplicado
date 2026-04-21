@@ -24,7 +24,12 @@ function internhub_start_session() {
     $isHttps = internhub_is_https_request();
     $isProduction = strtolower((string) getenv('APP_ENV')) === 'production';
     $secureCookies = $isHttps;
-    $cookieDomain = (string) getenv('SESSION_COOKIE_DOMAIN');
+    $cookieDomainRaw = trim((string) getenv('SESSION_COOKIE_DOMAIN'));
+    $cookieDomain = '';
+
+    if ($cookieDomainRaw !== '' && preg_match('/^\.?[a-z0-9-]+(\.[a-z0-9-]+)*$/i', $cookieDomainRaw)) {
+        $cookieDomain = $cookieDomainRaw;
+    }
 
     if ($isProduction && !$isHttps) {
         http_response_code(403);

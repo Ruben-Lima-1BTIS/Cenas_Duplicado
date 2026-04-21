@@ -214,9 +214,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['step']) && $_POST['st
     }
 }
 
-$show_step1 = !$show_reset_step && empty($reset_success);
+$show_request_form = !$show_reset_step && empty($reset_success);
 // Step 2 is shown while reset is in progress or after a successful reset to display the final confirmation state.
-$show_step2 = $show_reset_step || !empty($reset_success);
+$show_reset_form = $show_reset_step || !empty($reset_success);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -254,7 +254,7 @@ $show_step2 = $show_reset_step || !empty($reset_success);
         </aside>
         <main class="flex-1 flex items-center justify-center p-4">
             <div class="w-full max-w-md">
-                <div id="step1" class="form-container bg-white p-8 rounded-xl shadow-lg border border-gray-200 <?php echo $show_step1 ? '' : 'hidden'; ?>">
+                <div id="step1" class="form-container bg-white p-8 rounded-xl shadow-lg border border-gray-200 <?php echo $show_request_form ? '' : 'hidden'; ?>">
                     <div class="text-center mb-6">
                         <div class="mx-auto bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mb-4">
                             <i class="fas fa-key text-blue-600 text-2xl"></i>
@@ -284,7 +284,7 @@ $show_step2 = $show_reset_step || !empty($reset_success);
                         </a>
                     </div>
                 </div>
-                <div id="step2" class="form-container bg-white p-8 rounded-xl shadow-lg border border-gray-200 <?php echo $show_step2 ? '' : 'hidden'; ?>">
+                <div id="step2" class="form-container bg-white p-8 rounded-xl shadow-lg border border-gray-200 <?php echo $show_reset_form ? '' : 'hidden'; ?>">
                     <div class="text-center mb-6">
                         <div class="mx-auto bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mb-4">
                             <i class="fas fa-lock text-blue-600 text-2xl"></i>
