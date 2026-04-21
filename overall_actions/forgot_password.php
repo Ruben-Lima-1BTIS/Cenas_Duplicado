@@ -25,8 +25,9 @@ if (file_exists(__DIR__ . '/../../vendor/autoload.php')) {
 }
 
 $error = '';
-$success = '';
-$email_sent = false;
+$request_success = '';
+$reset_success = '';
+$show_reset_step = isset($_SESSION['reset_email'], $_SESSION['reset_role'], $_SESSION['reset_user_id']);
 
 // Step 1: Handle email submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['step']) && $_POST['step'] === 'email') {
@@ -63,8 +64,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['step']) && $_POST['st
 
             if (!$user_found) {
                 // Don't reveal if email exists (security best practice)
-                $success = 'If an account with that email exists, a reset link will be sent shortly. Check your inbox.';
-                $email_sent = true;
+                $request_success = 'If an account with that email exists, a reset code has been sent. Check your inbox.';
             } else {
                 // Check rate limiting (max 3 attempts per hour)
                 $stmt = $conn->prepare("
@@ -75,8 +75,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['step']) && $_POST['st
                 $rate_check = $stmt->fetch(PDO::FETCH_ASSOC);
                 
                 if ($rate_check['count'] >= 3) {
-                    $success = 'Too many reset requests. Please try again in an hour.';
-                    $email_sent = true;
+                    $request_success = 'Too many reset requests. Please try again in an hour.';
                 } else {
                     // Generate 6-digit reset code
                     $reset_code = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
@@ -110,39 +109,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['step']) && $_POST['st
                                 );
                                 
                                 if ($emailSent) {
-                                    $success = 'Password reset link has been sent to your email. Check your inbox for the reset code.';
+                                    $request_success = 'Password reset code sent. Check your email and continue below.';
                                     $_SESSION['reset_email'] = $email;
                                     $_SESSION['reset_role'] = $user_role;
                                     $_SESSION['reset_user_id'] = $user_id;
-                                    $email_sent = true;
+                                    $show_reset_step = true;
                                 } else {
                                     error_log("Failed to send reset email to {$email}");
-                                    $success = 'Password reset requested. Check your email for instructions.';
+                                    $request_success = 'Password reset code generated. Check your email and continue below.';
                                     $_SESSION['reset_email'] = $email;
                                     $_SESSION['reset_role'] = $user_role;
                                     $_SESSION['reset_user_id'] = $user_id;
-                                    $email_sent = true;
+                                    $show_reset_step = true;
                                 }
                             } catch (Exception $e) {
                                 error_log("Email service error: " . $e->getMessage());
-                                $success = 'Password reset requested. Check your email for instructions.';
+                                $request_success = 'Password reset code generated. Continue below.';
                                 $_SESSION['reset_email'] = $email;
                                 $_SESSION['reset_role'] = $user_role;
                                 $_SESSION['reset_user_id'] = $user_id;
-                                $email_sent = true;
+                                $show_reset_step = true;
                             }
                         } else {
                             // Fallback: store in session for demo
                             $_SESSION['reset_email'] = $email;
                             $_SESSION['reset_role'] = $user_role;
                             $_SESSION['reset_user_id'] = $user_id;
-                            $success = 'If an account with that email exists, a reset link will be sent shortly. Check your inbox.';
-                            $email_sent = true;
+                            $request_success = 'Password reset code generated. Continue below.';
+                            $show_reset_step = true;
                         }
                     } catch (PDOException $e) {
                         error_log("Password reset database error: " . $e->getMessage());
-                        $success = 'If an account with that email exists, a reset link will be sent shortly.';
-                        $email_sent = true;
+                        $request_success = 'If an account with that email exists, a reset code has been sent. Check your inbox.';
                     }
                 }
             }
@@ -219,9 +217,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['step']) && $_POST['st
                     unset($_SESSION['reset_role']);
                     unset($_SESSION['reset_user_id']);
 
-                    $success = 'Password reset successful! You can now login with your new password.';
+                    $reset_success = 'Password reset successful! You can now login with your new password.';
+                    $show_reset_step = true;
                 } catch (PDOException $e) {
                     $error = 'An error occurred. Please try again.';
+                    $show_reset_step = true;
                 }
             }
         }
@@ -264,7 +264,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['step']) && $_POST['st
         </aside>
         <main class="flex-1 flex items-center justify-center p-4">
             <div class="w-full max-w-md">
-                <div id="step1" class="form-container bg-white p-8 rounded-xl shadow-lg border border-gray-200">
+                <div id="step1" class="form-container bg-white p-8 rounded-xl shadow-lg border border-gray-200 <?php echo ($show_reset_step || !empty($reset_success)) ? 'hidden' : ''; ?>">
                     <div class="text-center mb-6">
                         <div class="mx-auto bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mb-4">
                             <i class="fas fa-key text-blue-600 text-2xl"></i>
@@ -272,6 +272,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['step']) && $_POST['st
                         <h2 class="text-2xl font-bold text-gray-800">Forgot your password?</h2>
                         <p class="text-gray-600 mt-2">Enter your email and we’ll send you a <strong>reset code</strong>.</p>
                     </div>
+                    <?php if (!empty($request_success)): ?>
+                        <div class="mb-4 p-3 bg-green-100 text-green-700 border border-green-300 rounded-lg text-sm">
+                            <?= htmlspecialchars($request_success) ?>
+                        </div>
+                    <?php endif; ?>
                     <form method="POST">
                         <input type="hidden" name="step" value="email">
                         <?php echo CSRFToken::field('forgot_password_csrf'); ?>
@@ -289,7 +294,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['step']) && $_POST['st
                         </a>
                     </div>
                 </div>
-                <div id="step2" class="form-container bg-white p-8 rounded-xl shadow-lg border border-gray-200 <?php echo !$email_sent && empty($success) ? 'hidden' : ''; ?>">
+                <div id="step2" class="form-container bg-white p-8 rounded-xl shadow-lg border border-gray-200 <?php echo (!$show_reset_step && empty($reset_success)) ? 'hidden' : ''; ?>">
                     <div class="text-center mb-6">
                         <div class="mx-auto bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mb-4">
                             <i class="fas fa-lock text-blue-600 text-2xl"></i>
@@ -298,9 +303,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['step']) && $_POST['st
                         <p class="text-gray-600 mt-2">Check your email for the <strong>6-digit code</strong> we sent you.</p>
                     </div>
                     
-                    <?php if (!empty($success)): ?>
+                    <?php if (!empty($reset_success)): ?>
                         <div class="mb-4 p-3 bg-green-100 text-green-700 border border-green-300 rounded-lg text-sm">
-                            <?= htmlspecialchars($success) ?>
+                            <?= htmlspecialchars($reset_success) ?>
                         </div>
                         <div class="text-center mt-6">
                             <a href="auth.php" class="inline-block bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 px-6 rounded-lg transition">
@@ -308,6 +313,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['step']) && $_POST['st
                             </a>
                         </div>
                     <?php else: ?>
+                        <?php if (!empty($request_success)): ?>
+                            <div class="mb-4 p-3 bg-green-100 text-green-700 border border-green-300 rounded-lg text-sm">
+                                <?= htmlspecialchars($request_success) ?>
+                            </div>
+                        <?php endif; ?>
                         <?php if (!empty($error)): ?>
                             <div class="mb-4 p-3 bg-red-100 text-red-700 border border-red-300 rounded-lg text-sm">
                                 <?= htmlspecialchars($error) ?>
