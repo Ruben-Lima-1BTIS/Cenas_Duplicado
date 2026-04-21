@@ -206,7 +206,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['step']) && $_POST['st
                     unset($_SESSION['reset_user_id']);
 
                     $reset_success = 'Password reset successful! You can now login with your new password.';
-                    $show_reset_step = true;
                 } catch (PDOException $e) {
                     $error = 'An error occurred. Please try again.';
                     $show_reset_step = true;
