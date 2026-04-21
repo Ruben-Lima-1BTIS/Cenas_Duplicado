@@ -23,7 +23,7 @@ function internhub_start_session() {
 
     $isHttps = internhub_is_https_request();
     $isProduction = strtolower((string) getenv('APP_ENV')) === 'production';
-    $secureCookies = $isHttps || $isProduction;
+    $secureCookies = $isHttps;
 
     if ($isProduction && !$isHttps) {
         http_response_code(403);
