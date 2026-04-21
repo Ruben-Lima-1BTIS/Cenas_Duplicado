@@ -21,11 +21,24 @@ function internhub_start_session() {
         return;
     }
 
+    $isHttps = internhub_is_https_request();
+    $isProduction = strtolower((string) getenv('APP_ENV')) === 'production';
+    $secureCookies = $isHttps || $isProduction;
+
     ini_set('session.use_strict_mode', '1');
     ini_set('session.use_only_cookies', '1');
-    ini_set('session.cookie_httponly', '1');
-    ini_set('session.cookie_samesite', 'Strict');
-    ini_set('session.cookie_secure', internhub_is_https_request() ? '1' : '0');
+
+    if (PHP_VERSION_ID >= 70300) {
+        session_set_cookie_params([
+            'lifetime' => 0,
+            'path' => '/',
+            'secure' => $secureCookies,
+            'httponly' => true,
+            'samesite' => 'Strict',
+        ]);
+    } else {
+        session_set_cookie_params(0, '/; samesite=Strict', '', $secureCookies, true);
+    }
 
     session_start();
 
