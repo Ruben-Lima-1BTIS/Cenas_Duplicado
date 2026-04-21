@@ -33,6 +33,7 @@ function internhub_start_session() {
     ini_set('session.use_strict_mode', '1');
     ini_set('session.use_only_cookies', '1');
 
+    // PHP 7.3+ supports array-based cookie params with explicit SameSite.
     if (PHP_VERSION_ID >= 70300) {
         session_set_cookie_params([
             'lifetime' => 0,
@@ -42,6 +43,7 @@ function internhub_start_session() {
             'samesite' => 'Strict',
         ]);
     } else {
+        // PHP < 7.3 fallback: append SameSite to path attribute.
         session_set_cookie_params(0, '/; samesite=Strict', '', $secureCookies, true);
     }
 

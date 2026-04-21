@@ -213,6 +213,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['step']) && $_POST['st
         }
     }
 }
+
+$show_step1 = !$show_reset_step && empty($reset_success);
+$show_step2 = $show_reset_step || !empty($reset_success);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -250,7 +253,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['step']) && $_POST['st
         </aside>
         <main class="flex-1 flex items-center justify-center p-4">
             <div class="w-full max-w-md">
-                <div id="step1" class="form-container bg-white p-8 rounded-xl shadow-lg border border-gray-200 <?php echo ($show_reset_step || !empty($reset_success)) ? 'hidden' : ''; ?>">
+                <div id="step1" class="form-container bg-white p-8 rounded-xl shadow-lg border border-gray-200 <?php echo $show_step1 ? '' : 'hidden'; ?>">
                     <div class="text-center mb-6">
                         <div class="mx-auto bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mb-4">
                             <i class="fas fa-key text-blue-600 text-2xl"></i>
@@ -280,7 +283,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['step']) && $_POST['st
                         </a>
                     </div>
                 </div>
-                <div id="step2" class="form-container bg-white p-8 rounded-xl shadow-lg border border-gray-200 <?php echo (!$show_reset_step && empty($reset_success)) ? 'hidden' : ''; ?>">
+                <div id="step2" class="form-container bg-white p-8 rounded-xl shadow-lg border border-gray-200 <?php echo $show_step2 ? '' : 'hidden'; ?>">
                     <div class="text-center mb-6">
                         <div class="mx-auto bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mb-4">
                             <i class="fas fa-lock text-blue-600 text-2xl"></i>
