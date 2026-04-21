@@ -215,6 +215,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['step']) && $_POST['st
 }
 
 $show_step1 = !$show_reset_step && empty($reset_success);
+// Step 2 is shown while reset is in progress or after a successful reset to display the final confirmation state.
 $show_step2 = $show_reset_step || !empty($reset_success);
 ?>
 <!DOCTYPE html>

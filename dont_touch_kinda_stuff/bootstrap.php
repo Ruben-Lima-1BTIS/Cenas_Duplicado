@@ -24,6 +24,7 @@ function internhub_start_session() {
     $isHttps = internhub_is_https_request();
     $isProduction = strtolower((string) getenv('APP_ENV')) === 'production';
     $secureCookies = $isHttps;
+    $cookieDomain = (string) getenv('SESSION_COOKIE_DOMAIN');
 
     if ($isProduction && !$isHttps) {
         http_response_code(403);
@@ -38,13 +39,14 @@ function internhub_start_session() {
         session_set_cookie_params([
             'lifetime' => 0,
             'path' => '/',
+            'domain' => $cookieDomain,
             'secure' => $secureCookies,
             'httponly' => true,
             'samesite' => 'Strict',
         ]);
     } else {
         // PHP < 7.3 fallback: append SameSite to path attribute.
-        session_set_cookie_params(0, '/; samesite=Strict', '', $secureCookies, true);
+        session_set_cookie_params(0, '/; samesite=Strict', $cookieDomain, $secureCookies, true);
     }
 
     session_start();
